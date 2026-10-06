@@ -22,11 +22,29 @@ String formatDistance(double meters) {
   return '${km.toStringAsFixed(km < 10 ? 1 : 0).replaceAll('.', ',')} km';
 }
 
-/// Null when the person is (nearly) stationary.
-String? formatSpeed(double? metersPerSecond) {
-  if (metersPerSecond == null || metersPerSecond < 1) return null;
-  return '${(metersPerSecond * 3.6).round()} km/j';
+enum Movement { walking, running, traveling }
+
+/// How someone is moving, from their GPS speed; null when (nearly) standing still,
+/// paused, or when [stale] data can't say anything about the present.
+Movement? movementOf(DeviceStatus? s, {bool stale = false}) {
+  final speed = s?.speed;
+  if (s == null || stale || !s.hasLocation || speed == null || speed < 0.8) return null; // < ~3 km/h
+  if (speed < 2.2) return Movement.walking; // < ~8 km/h
+  if (speed < 4.5) return Movement.running; // < ~16 km/h
+  return Movement.traveling;
 }
+
+IconData movementIcon(Movement m) => switch (m) {
+      Movement.walking => Symbols.directions_walk_rounded,
+      Movement.running => Symbols.directions_run_rounded,
+      Movement.traveling => Symbols.directions_car_rounded,
+    };
+
+String movementLabel(Movement m) => switch (m) {
+      Movement.walking => 'Sedang berjalan',
+      Movement.running => 'Sedang berlari',
+      Movement.traveling => 'Dalam perjalanan',
+    };
 
 IconData batteryIcon(DeviceStatus s) {
   if (s.batteryState == 'charging' || s.batteryState == 'full') return Symbols.battery_charging_full_rounded;

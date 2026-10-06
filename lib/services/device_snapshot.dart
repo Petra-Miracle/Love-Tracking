@@ -23,13 +23,16 @@ class DeviceSnapshot {
     final networkType = networkTypeOf(results[2] as List<ConnectivityResult>);
     final carrier = await NetworkCarrier.getCarrierInfo();
     final showLocation = position != null && !sharingPaused;
+    // With a 10 m distance filter no new fix arrives once someone stops, so an old fix's
+    // speed would keep them "moving" forever. Treat fixes older than 30 s as standing still.
+    final freshFix = position != null && DateTime.now().difference(position.timestamp) < const Duration(seconds: 30);
 
     return DeviceStatus(
       userId: '',
       lat: showLocation ? position.latitude : null,
       lng: showLocation ? position.longitude : null,
       accuracy: showLocation ? position.accuracy : null,
-      speed: showLocation && position.speed >= 0 ? position.speed : null,
+      speed: showLocation ? (freshFix && position.speed >= 0 ? position.speed : 0) : null,
       heading: showLocation && position.heading >= 0 ? position.heading : null,
       battery: results[0] as int?,
       batteryState: results[1] as String,

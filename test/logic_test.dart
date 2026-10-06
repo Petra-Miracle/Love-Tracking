@@ -88,9 +88,22 @@ void main() {
       expect(formatDistance(25400), '25 km');
     });
 
-    test('speed hides when stationary', () {
-      expect(formatSpeed(0.4), isNull);
-      expect(formatSpeed(10), '36 km/j');
+    test('movement from speed', () {
+      DeviceStatus at(double? speed, {bool paused = false}) => DeviceStatus(
+            userId: 'u',
+            lat: paused ? null : -6.2,
+            lng: paused ? null : 106.8,
+            speed: speed,
+            sharingPaused: paused,
+            updatedAt: base.updatedAt,
+          );
+      expect(movementOf(at(0.3)), isNull);
+      expect(movementOf(at(null)), isNull);
+      expect(movementOf(at(1.4)), Movement.walking);
+      expect(movementOf(at(3)), Movement.running);
+      expect(movementOf(at(12)), Movement.traveling);
+      expect(movementOf(at(12), stale: true), isNull);
+      expect(movementOf(at(12, paused: true)), isNull);
     });
 
     test('network label', () {

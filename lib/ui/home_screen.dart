@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -12,6 +11,7 @@ import '../providers.dart';
 import 'format.dart';
 import 'profile_screen.dart';
 import 'theme.dart';
+import 'user_pin.dart';
 import 'widgets.dart';
 
 /// Partner data older than this is shown as "last seen".
@@ -154,21 +154,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 if (myPoint != null)
                   Marker(
                     point: myPoint,
-                    width: 40,
-                    height: 52,
+                    width: userPinSize(40).width,
+                    height: userPinSize(40).height,
                     alignment: Alignment.topCenter,
-                    child: _UserPin(user: session.user, color: AppColors.me, size: 40),
+                    child: UserPin(
+                      user: session.user,
+                      color: AppColors.me,
+                      avatarSize: 40,
+                      movement: movementOf(myStatus),
+                    ),
                   ),
                 if (partnerPoint != null)
                   Marker(
                     point: partnerPoint,
-                    width: 48,
-                    height: 62,
+                    width: userPinSize(48).width,
+                    height: userPinSize(48).height,
                     alignment: Alignment.topCenter,
-                    child: _UserPin(
+                    child: UserPin(
                       user: partner,
                       color: partnerStale ? AppColors.stale : AppColors.love,
-                      size: 48,
+                      avatarSize: 48,
+                      movement: movementOf(partnerStatus, stale: partnerStale),
                       faded: partnerStale,
                     ),
                   ),
@@ -422,46 +428,6 @@ class _MapButton extends StatelessWidget {
   }
 }
 
-/// Map marker showing a user's profile picture in a colored ring with a diamond pointer.
-class _UserPin extends StatelessWidget {
-  const _UserPin({required this.user, required this.color, required this.size, this.faded = false});
-
-  final AppUser user;
-  final Color color;
-  final double size;
-  final bool faded;
-
-  @override
-  Widget build(BuildContext context) {
-    return Opacity(
-      opacity: faded ? 0.85 : 1,
-      child: Stack(alignment: Alignment.topCenter, children: [
-        Positioned(
-          top: size - 7,
-          child: Transform.rotate(
-            angle: math.pi / 4,
-            child: Container(
-              width: 14,
-              height: 14,
-              decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2)),
-            ),
-          ),
-        ),
-        Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: color, width: 3),
-            boxShadow: floatingShadow,
-          ),
-          child: UserAvatar(user: user, size: size - 6, fontSize: size * 0.375),
-        ),
-      ]),
-    );
-  }
-}
-
 class _PartnerCard extends ConsumerStatefulWidget {
   const _PartnerCard({required this.partner, required this.status, required this.myPoint, this.onTap});
 
@@ -510,7 +476,6 @@ class _PartnerCardState extends ConsumerState<_PartnerCard> {
     final distance = partnerPoint != null && widget.myPoint != null
         ? const Distance().as(LengthUnit.Meter, widget.myPoint!, partnerPoint)
         : null;
-    final speed = formatSpeed(s?.speed);
     final address = partnerPoint == null
         ? null
         : ref.watch(addressProvider(addressKey(partnerPoint.latitude, partnerPoint.longitude)));
@@ -542,7 +507,6 @@ class _PartnerCardState extends ConsumerState<_PartnerCard> {
             if (s.networkType == 'wifi' && s.carrier != null)
               _StatChip(icon: Symbols.sim_card_rounded, label: s.carrier!),
             if (distance != null) _StatChip(icon: Symbols.straighten_rounded, label: formatDistance(distance)),
-            if (speed != null) _StatChip(icon: Symbols.directions_run_rounded, label: speed),
           ]),
       ]),
     );

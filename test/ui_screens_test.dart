@@ -158,7 +158,7 @@ Future<void> _render(
     ),
   ));
   await tester.pump(const Duration(milliseconds: 100));
-  await tester.pump(const Duration(milliseconds: 100));
+  await tester.pump(const Duration(milliseconds: 900));
   if (interact != null) await interact(tester);
 
   expect(tester.takeException(), isNull);
@@ -241,6 +241,15 @@ void main() {
     '6F-waiting': (session: _paired(), paused: false, perms: null, b: Brightness.light),
     '6G-me-paused': (session: _paired(partner: _status()), paused: true, perms: null, b: Brightness.light),
     '6H-permissions': (session: _paired(partner: _status()), paused: false, perms: _perms(all: false), b: Brightness.light),
+    '6J-moving': (
+      session: _paired(
+        partner: _status(speed: 3),
+        me: _status(userId: 'u1', lat: -6.2140, lng: 106.8520, speed: 1.4),
+      ),
+      paused: false,
+      perms: null,
+      b: Brightness.light,
+    ),
     '6I-dark': (session: _paired(partner: _status()), paused: false, perms: null, b: Brightness.dark),
   };
   for (final MapEntry(key: name, value: v) in home.entries) {
@@ -254,16 +263,19 @@ void main() {
     '7 Menu',
     (t) => _render(t, '7-menu', const HomeScreen(), session: _paired(partner: _status()), interact: (t) async {
       await t.tap(find.byTooltip('Show menu'));
-      await t.pumpAndSettle();
+      await t.pump(const Duration(milliseconds: 400));
+      await t.pump(const Duration(milliseconds: 400));
     }),
   );
   testWidgets(
     '8 Unpair dialog',
     (t) => _render(t, '8-dialog', const HomeScreen(), session: _paired(partner: _status()), interact: (t) async {
       await t.tap(find.byTooltip('Show menu'));
-      await t.pumpAndSettle();
+      await t.pump(const Duration(milliseconds: 400));
+      await t.pump(const Duration(milliseconds: 400));
       await t.tap(find.text('Putuskan pasangan'));
-      await t.pumpAndSettle();
+      await t.pump(const Duration(milliseconds: 400));
+      await t.pump(const Duration(milliseconds: 400));
     }),
   );
 }
