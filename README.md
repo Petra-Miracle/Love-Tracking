@@ -4,6 +4,24 @@ Aplikasi pasangan untuk berbagi **lokasi real-time, baterai, dan jaringan/operat
 Backend (Express + Pusher + Neon Postgres di Vercel) ada di `D:\Love-Tracking-BACKEND` —
 kontrak API lengkap ada di `D:\Love-Tracking-BACKEND\PROMPT-BACKEND.md`.
 
+## Install di HP
+
+Scan QR ini dengan kamera HP Android (atau buka link di bawahnya):
+
+<img src="docs/install-qr.png" alt="QR install Love Tracking" width="220">
+
+https://github.com/Petra-Miracle/Love-Tracking/releases/latest/download/love-tracking.apk
+
+QR ini **dinamis**: link-nya selalu mengarah ke rilis terbaru di GitHub Releases, jadi QR yang sama
+bisa dipakai untuk setiap update. Saat menginstall, izinkan *Install unknown apps* untuk browser.
+
+Rilis versi baru (menaikkan versi, build APK, dan publish ke GitHub Releases):
+```
+.\scripts\release.ps1 -Notes "Ringkasan perubahan"
+```
+Update bisa menimpa versi lama hanya jika APK ditandatangani dengan keystore yang sama
+(saat ini: debug keystore komputer pengembang).
+
 ## Arsitektur
 
 ```
