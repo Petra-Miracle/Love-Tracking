@@ -1,0 +1,22 @@
+name: network_carrier
+description: "Reads the mobile carrier name and cellular generation (2G-5G) on Android."
+version: 0.0.1
+publish_to: none
+
+environment:
+  sdk: ^3.12.0
+  flutter: '>=3.3.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.lovetracking.network_carrier
+        pluginClass: NetworkCarrierPlugin

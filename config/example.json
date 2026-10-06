@@ -1,0 +1,6 @@
+{
+  "API_BASE_URL": "https://your-backend.vercel.app",
+  "PUSHER_KEY": "your-pusher-key",
+  "PUSHER_CLUSTER": "ap1",
+  "GOOGLE_SERVER_CLIENT_ID": "xxxxxxxx.apps.googleusercontent.com"
+}
