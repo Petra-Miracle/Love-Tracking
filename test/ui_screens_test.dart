@@ -25,6 +25,8 @@ class _FakeSession extends SessionNotifier {
   @override
   Future<Session?> build() async => initial;
 
+  void emit(Session session) => state = AsyncData(session);
+
   @override
   Future<Invite> createInvite() async => Invite(
         code: 'K7P2QX',
@@ -81,12 +83,13 @@ DeviceStatus _status({
   String? gen = '4G',
   bool paused = false,
   Duration age = Duration.zero,
+  double accuracy = 40,
 }) =>
     DeviceStatus(
       userId: userId,
       lat: paused ? null : lat,
       lng: paused ? null : lng,
-      accuracy: 40,
+      accuracy: accuracy,
       speed: speed,
       battery: battery,
       batteryState: batteryState,
@@ -241,21 +244,43 @@ void main() {
     '6F-waiting': (session: _paired(), paused: false, perms: null, b: Brightness.light),
     '6G-me-paused': (session: _paired(partner: _status()), paused: true, perms: null, b: Brightness.light),
     '6H-permissions': (session: _paired(partner: _status()), paused: false, perms: _perms(all: false), b: Brightness.light),
-    '6J-moving': (
-      session: _paired(
-        partner: _status(speed: 3),
-        me: _status(userId: 'u1', lat: -6.2140, lng: 106.8520, speed: 1.4),
-      ),
-      paused: false,
-      perms: null,
-      b: Brightness.light,
-    ),
     '6I-dark': (session: _paired(partner: _status()), paused: false, perms: null, b: Brightness.dark),
   };
   for (final MapEntry(key: name, value: v) in home.entries) {
     testWidgets('$name home', (t) => _render(t, name, const HomeScreen(),
         session: v.session, paused: v.paused, permissions: v.perms, brightness: v.b));
   }
+
+  testWidgets(
+    '6J Moving (partner running ~2.5 m/s, me walking ~1.4 m/s)',
+    (t) => _render(
+      t,
+      '6J-moving',
+      const HomeScreen(),
+      session: _paired(
+        partner: _status(accuracy: 10, age: const Duration(seconds: 40)),
+        me: _status(userId: 'u1', lat: -6.2140, lng: 106.8520, accuracy: 10, age: const Duration(seconds: 40)),
+      ),
+      interact: (t) async {
+        // Movement comes from displacement between updates: ~100 m and ~56 m in 40 s.
+        final container = ProviderScope.containerOf(t.element(find.byType(HomeScreen)));
+        (container.read(sessionProvider.notifier) as _FakeSession).emit(_paired(
+          partner: _status(lat: -6.2088 + 100 / 111320, accuracy: 10),
+          me: _status(userId: 'u1', lat: -6.2140 + 56 / 111320, lng: 106.8520, accuracy: 10),
+        ));
+        await t.pump(const Duration(milliseconds: 100));
+        await t.pump(const Duration(milliseconds: 900));
+        expect(find.byTooltip('Sedang berlari'), findsOneWidget);
+        expect(find.byTooltip('Sedang berjalan'), findsOneWidget);
+      },
+    ),
+  );
+
+  testWidgets('6A shows no movement from a single update with a high reported speed', (t) async {
+    await _render(t, '6A-normal', const HomeScreen(), session: _paired(partner: _status(speed: 10)), interact: (t) async {
+      expect(find.byTooltip('Dalam perjalanan'), findsNothing);
+    });
+  });
 
   testWidgets('11 Profile', (t) => _render(t, '11-profile', const ProfileScreen(), session: _paired(partner: _status())));
 

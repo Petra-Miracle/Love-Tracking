@@ -9,6 +9,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../models/models.dart';
 import '../providers.dart';
 import 'format.dart';
+import 'movement.dart';
 import 'profile_screen.dart';
 import 'theme.dart';
 import 'user_pin.dart';
@@ -32,6 +33,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final _map = MapController();
   bool _mapReady = false;
   bool _centeredOnce = false;
+  final _partnerMotion = MovementEstimator();
+  final _myMotion = MovementEstimator();
 
   void _centerOn(LatLng point, {double zoom = 16}) {
     if (_mapReady) _map.move(point, zoom);
@@ -110,6 +113,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final partnerStale =
         partnerStatus == null || DateTime.now().difference(partnerStatus.updatedAt) > _staleAfter;
     _maybeCenterInitially(partnerPoint, myPoint);
+    final partnerMovement = _partnerMotion.update(partnerStatus);
+    final myMovement = _myMotion.update(paused ? null : myStatus);
 
     return Scaffold(
       body: Stack(
@@ -161,7 +166,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       user: session.user,
                       color: AppColors.me,
                       avatarSize: 40,
-                      movement: movementOf(myStatus),
+                      movement: myMovement,
                     ),
                   ),
                 if (partnerPoint != null)
@@ -174,7 +179,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       user: partner,
                       color: partnerStale ? AppColors.stale : AppColors.love,
                       avatarSize: 48,
-                      movement: movementOf(partnerStatus, stale: partnerStale),
+                      movement: partnerStale ? null : partnerMovement,
                       faded: partnerStale,
                     ),
                   ),

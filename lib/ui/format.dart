@@ -24,13 +24,12 @@ String formatDistance(double meters) {
 
 enum Movement { walking, running, traveling }
 
-/// How someone is moving, from their GPS speed; null when (nearly) standing still,
-/// paused, or when [stale] data can't say anything about the present.
-Movement? movementOf(DeviceStatus? s, {bool stale = false}) {
-  final speed = s?.speed;
-  if (s == null || stale || !s.hasLocation || speed == null || speed < 0.8) return null; // < ~3 km/h
-  if (speed < 2.2) return Movement.walking; // < ~8 km/h
-  if (speed < 4.5) return Movement.running; // < ~16 km/h
+/// Movement for a speed in m/s; null below walking pace. See [MovementEstimator] for
+/// how the speed is measured.
+Movement? movementForSpeed(double metersPerSecond) {
+  if (metersPerSecond < 0.8) return null; // < ~3 km/h
+  if (metersPerSecond < 2.2) return Movement.walking; // < ~8 km/h
+  if (metersPerSecond < 4.5) return Movement.running; // < ~16 km/h
   return Movement.traveling;
 }
 

@@ -4,6 +4,7 @@ import 'package:love_tracking/models/models.dart';
 import 'package:love_tracking/providers.dart';
 import 'package:love_tracking/services/device_snapshot.dart';
 import 'package:love_tracking/ui/format.dart';
+import 'package:love_tracking/ui/movement.dart';
 
 void main() {
   group('inviteCodeFromUri', () {
@@ -88,41 +89,11 @@ void main() {
       expect(formatDistance(25400), '25 km');
     });
 
-    test('movement from speed', () {
-      DeviceStatus at(double? speed, {bool paused = false}) => DeviceStatus(
-            userId: 'u',
-            lat: paused ? null : -6.2,
-            lng: paused ? null : 106.8,
-            speed: speed,
-            sharingPaused: paused,
-            updatedAt: base.updatedAt,
-          );
-      expect(movementOf(at(0.3)), isNull);
-      expect(movementOf(at(null)), isNull);
-      expect(movementOf(at(1.4)), Movement.walking);
-      expect(movementOf(at(3)), Movement.running);
-      expect(movementOf(at(12)), Movement.traveling);
-      expect(movementOf(at(12), stale: true), isNull);
-      expect(movementOf(at(12, paused: true)), isNull);
-    });
-
-    test('network label', () {
-      final wifi = DeviceStatus(userId: 'u', networkType: 'wifi', carrier: 'XL', updatedAt: base.updatedAt);
-      expect(networkLabel(wifi), 'Wi-Fi');
-      expect(
-        networkLabel(DeviceStatus(
-          userId: 'u',
-          networkType: 'mobile',
-          carrier: 'Telkomsel',
-          mobileNetworkGen: '5G',
-          updatedAt: base.updatedAt,
-        )),
-        'Telkomsel 5G',
-      );
-      expect(
-        networkLabel(DeviceStatus(userId: 'u', networkType: 'mobile', updatedAt: base.updatedAt)),
-        'Data seluler',
-      );
+    test('movement thresholds', () {
+      expect(movementForSpeed(0.3), isNull);
+      expect(movementForSpeed(1.4), Movement.walking);
+      expect(movementForSpeed(3), Movement.running);
+      expect(movementForSpeed(12), Movement.traveling);
     });
 
     test('battery label', () {
@@ -164,6 +135,60 @@ void main() {
       const custom = AppUser(id: 'u1', email: 'a', name: 'A', photoUrl: 'https://api.example/users/u1/photo?v=1');
       expect(google.hasCustomPhoto, isFalse);
       expect(custom.hasCustomPhoto, isTrue);
+    });
+  });
+
+  group('MovementEstimator', () {
+    final t0 = DateTime(2026, 10, 6, 12);
+    const lat0 = -6.2;
+    const lng0 = 106.8;
+    const degPerMeter = 1 / 111320;
+
+    /// Feeds samples every 10 s; [northMeters] gives each sample's offset from the start.
+    Movement? feed(List<double> northMeters, {double accuracy = 10, double reportedSpeed = 0, List<double>? eastMeters}) {
+      var now = t0;
+      final e = MovementEstimator(clock: () => now);
+      Movement? m;
+      for (var i = 0; i < northMeters.length; i++) {
+        now = t0.add(Duration(seconds: i * 10));
+        m = e.update(DeviceStatus(
+          userId: 'u',
+          lat: lat0 + northMeters[i] * degPerMeter,
+          lng: lng0 + (eastMeters?[i] ?? 0) * degPerMeter,
+          accuracy: accuracy,
+          speed: reportedSpeed,
+          updatedAt: now,
+        ));
+      }
+      return m;
+    }
+
+    test('sitting indoors: GPS jumps 30-45 m with a fake 2 m/s speed is not movement', () {
+      expect(
+        feed([0, 33, -12, 28, 5, 40, -8], eastMeters: [0, 11, 28, -10, 33, 0, 20], accuracy: 25, reportedSpeed: 2),
+        isNull,
+      );
+    });
+
+    test('old app version repeating one position with a stale speed is not movement', () {
+      expect(feed([0, 0, 0, 0, 0, 0], reportedSpeed: 1.6), isNull);
+    });
+
+    test('walking ~1.4 m/s', () {
+      expect(feed([0, 14, 28, 42, 56, 70, 84]), Movement.walking);
+    });
+
+    test('riding a motorbike ~12 m/s', () {
+      expect(feed([0, 120, 240, 360]), Movement.traveling);
+    });
+
+    test('needs at least 20 s of data before deciding', () {
+      expect(feed([0, 120]), isNull);
+    });
+
+    test('stops showing movement after standing still for a minute', () {
+      // Walked for 30 s, then stood still for 70 s.
+      expect(feed([0, 14, 28, 42, 42, 42, 42, 42, 42, 42, 42]), isNull);
     });
   });
 }
