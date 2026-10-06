@@ -10,7 +10,9 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../models/models.dart';
 import '../providers.dart';
 import 'format.dart';
+import 'profile_screen.dart';
 import 'theme.dart';
+import 'widgets.dart';
 
 /// Partner data older than this is shown as "last seen".
 const _staleAfter = Duration(minutes: 15);
@@ -149,14 +151,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ]),
               MarkerLayer(markers: [
-                if (myPoint != null) Marker(point: myPoint, width: 24, height: 24, child: const _MeDot()),
+                if (myPoint != null)
+                  Marker(
+                    point: myPoint,
+                    width: 40,
+                    height: 52,
+                    alignment: Alignment.topCenter,
+                    child: _UserPin(user: session.user, color: AppColors.me, size: 40),
+                  ),
                 if (partnerPoint != null)
                   Marker(
                     point: partnerPoint,
                     width: 48,
                     height: 62,
                     alignment: Alignment.topCenter,
-                    child: _PartnerPin(user: partner, stale: partnerStale),
+                    child: _UserPin(
+                      user: partner,
+                      color: partnerStale ? AppColors.stale : AppColors.love,
+                      size: 48,
+                      faded: partnerStale,
+                    ),
                   ),
               ]),
             ],
@@ -170,6 +184,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   _TopBar(
                     partner: partner,
                     paused: paused,
+                    onProfile: () => Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(builder: (_) => const ProfileScreen()),
+                    ),
                     onTogglePause: () => ref.read(sharingPausedProvider.notifier).set(!paused),
                     onUnpair: () => _confirmUnpair(partner.firstName),
                     onSignOut: () => ref.read(sessionProvider.notifier).signOut(),
@@ -247,12 +265,13 @@ class _FloatingCard extends StatelessWidget {
   }
 }
 
-enum _MenuAction { togglePause, unpair, signOut }
+enum _MenuAction { profile, togglePause, unpair, signOut }
 
 class _TopBar extends StatelessWidget {
   const _TopBar({
     required this.partner,
     required this.paused,
+    required this.onProfile,
     required this.onTogglePause,
     required this.onUnpair,
     required this.onSignOut,
@@ -260,6 +279,7 @@ class _TopBar extends StatelessWidget {
 
   final AppUser partner;
   final bool paused;
+  final VoidCallback onProfile;
   final VoidCallback onTogglePause;
   final VoidCallback onUnpair;
   final VoidCallback onSignOut;
@@ -296,11 +316,13 @@ class _TopBar extends StatelessWidget {
           position: PopupMenuPosition.under,
           menuPadding: const EdgeInsets.all(8),
           onSelected: (action) => switch (action) {
+            _MenuAction.profile => onProfile(),
             _MenuAction.togglePause => onTogglePause(),
             _MenuAction.unpair => onUnpair(),
             _MenuAction.signOut => onSignOut(),
           },
           itemBuilder: (context) => [
+            item(_MenuAction.profile, Symbols.account_circle_rounded, 'Profil'),
             paused
                 ? item(_MenuAction.togglePause, Symbols.play_circle_rounded, 'Lanjutkan berbagi lokasi')
                 : item(_MenuAction.togglePause, Symbols.pause_circle_rounded, 'Jeda berbagi lokasi'),
@@ -400,60 +422,22 @@ class _MapButton extends StatelessWidget {
   }
 }
 
-class _MeDot extends StatelessWidget {
-  const _MeDot();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.me,
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 3),
-        boxShadow: floatingShadow,
-      ),
-    );
-  }
-}
-
-class _Avatar extends StatelessWidget {
-  const _Avatar({required this.user, required this.size, required this.fontSize});
+/// Map marker showing a user's profile picture in a colored ring with a diamond pointer.
+class _UserPin extends StatelessWidget {
+  const _UserPin({required this.user, required this.color, required this.size, this.faded = false});
 
   final AppUser user;
+  final Color color;
   final double size;
-  final double fontSize;
+  final bool faded;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final photo = user.photoUrl;
-    return CircleAvatar(
-      radius: size / 2,
-      backgroundColor: scheme.primaryContainer,
-      foregroundImage: photo == null ? null : NetworkImage(photo),
-      child: Text(
-        user.firstName.isEmpty ? '?' : user.firstName[0].toUpperCase(),
-        style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w600, color: scheme.onSurface),
-      ),
-    );
-  }
-}
-
-/// 48px avatar with a love-colored ring and a diamond pointer underneath.
-class _PartnerPin extends StatelessWidget {
-  const _PartnerPin({required this.user, required this.stale});
-
-  final AppUser user;
-  final bool stale;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = stale ? AppColors.stale : AppColors.love;
     return Opacity(
-      opacity: stale ? 0.85 : 1,
+      opacity: faded ? 0.85 : 1,
       child: Stack(alignment: Alignment.topCenter, children: [
         Positioned(
-          top: 41,
+          top: size - 7,
           child: Transform.rotate(
             angle: math.pi / 4,
             child: Container(
@@ -464,21 +448,21 @@ class _PartnerPin extends StatelessWidget {
           ),
         ),
         Container(
-          width: 48,
-          height: 48,
+          width: size,
+          height: size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(color: color, width: 3),
             boxShadow: floatingShadow,
           ),
-          child: _Avatar(user: user, size: 42, fontSize: 18),
+          child: UserAvatar(user: user, size: size - 6, fontSize: size * 0.375),
         ),
       ]),
     );
   }
 }
 
-class _PartnerCard extends StatefulWidget {
+class _PartnerCard extends ConsumerStatefulWidget {
   const _PartnerCard({required this.partner, required this.status, required this.myPoint, this.onTap});
 
   final AppUser partner;
@@ -487,10 +471,10 @@ class _PartnerCard extends StatefulWidget {
   final VoidCallback? onTap;
 
   @override
-  State<_PartnerCard> createState() => _PartnerCardState();
+  ConsumerState<_PartnerCard> createState() => _PartnerCardState();
 }
 
-class _PartnerCardState extends State<_PartnerCard> {
+class _PartnerCardState extends ConsumerState<_PartnerCard> {
   late final Timer _ticker;
 
   @override
@@ -527,12 +511,15 @@ class _PartnerCardState extends State<_PartnerCard> {
         ? const Distance().as(LengthUnit.Meter, widget.myPoint!, partnerPoint)
         : null;
     final speed = formatSpeed(s?.speed);
+    final address = partnerPoint == null
+        ? null
+        : ref.watch(addressProvider(addressKey(partnerPoint.latitude, partnerPoint.longitude)));
 
     return _FloatingCard(
       onTap: widget.onTap,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, spacing: 10, children: [
         Row(children: [
-          _Avatar(user: widget.partner, size: 40, fontSize: 16),
+          UserAvatar(user: widget.partner, size: 40, fontSize: 16),
           const SizedBox(width: 10),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, spacing: 2, children: [
@@ -546,6 +533,8 @@ class _PartnerCardState extends State<_PartnerCard> {
           ),
           if (widget.onTap != null) const Icon(Symbols.center_focus_strong_rounded, size: 24, color: AppColors.love),
         ]),
+        if (address != null && !(address.hasError && !address.hasValue) && !(address.hasValue && address.value == null))
+          _AddressRow(text: address.value ?? 'Mencari alamat…', loading: !address.hasValue),
         if (s != null)
           Wrap(spacing: 6, runSpacing: 6, children: [
             _StatChip(icon: batteryIcon(s), iconColor: batteryColor(s, scheme), label: batteryLabel(s)),
@@ -557,6 +546,37 @@ class _PartnerCardState extends State<_PartnerCard> {
           ]),
       ]),
     );
+  }
+}
+
+class _AddressRow extends StatelessWidget {
+  const _AddressRow({required this.text, required this.loading});
+
+  final String text;
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Padding(
+        padding: EdgeInsets.only(top: 1),
+        child: Icon(Symbols.location_on_rounded, size: 18, color: AppColors.love),
+      ),
+      const SizedBox(width: 8),
+      Expanded(
+        child: Text(
+          text,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 13,
+            height: 1.35,
+            color: loading ? scheme.onSurfaceVariant : scheme.onSurface,
+          ),
+        ),
+      ),
+    ]);
   }
 }
 

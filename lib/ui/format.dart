@@ -72,3 +72,27 @@ String networkLabel(DeviceStatus s) => switch (s.networkType) {
       'none' => 'Offline',
       _ => 'Internet',
     };
+
+/// Builds an Indonesian-style address ("Jl. Sudirman No. 1, Senayan, Kebayoran Baru,
+/// Kota Jakarta Selatan, DKI Jakarta 12190"), skipping empty and repeated parts.
+String? formatAddress({
+  String? street,
+  String? subLocality,
+  String? locality,
+  String? subAdministrativeArea,
+  String? administrativeArea,
+  String? postalCode,
+}) {
+  final parts = <String>[];
+  for (final raw in [street, subLocality, locality, subAdministrativeArea, administrativeArea]) {
+    final part = raw?.trim() ?? '';
+    // Geocoders sometimes return plus codes (e.g. "8Q7X+2F") instead of a street.
+    if (part.isEmpty || part.contains('+')) continue;
+    if (parts.any((p) => p.toLowerCase().contains(part.toLowerCase()))) continue;
+    parts.add(part);
+  }
+  if (parts.isEmpty) return null;
+  final code = postalCode?.trim() ?? '';
+  if (code.isNotEmpty && !parts.last.contains(code)) parts[parts.length - 1] = '${parts.last} $code';
+  return parts.join(', ');
+}

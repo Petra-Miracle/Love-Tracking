@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart' show Locale;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -13,6 +15,7 @@ import 'data/local_store.dart';
 import 'models/models.dart';
 import 'services/realtime_service.dart';
 import 'services/tracking_service.dart';
+import 'ui/format.dart';
 
 final localStoreProvider = Provider((ref) => const LocalStore());
 final apiClientProvider = Provider((ref) => ApiClient(store: ref.watch(localStoreProvider)));
@@ -119,6 +122,21 @@ class SessionNotifier extends AsyncNotifier<Session?> {
     if (current != null) state = AsyncData(current.unpaired());
   }
 
+  /// Saves the edited profile; [photo] is uploaded first so a failed name change keeps the new photo.
+  Future<void> saveProfile({String? name, ({Uint8List bytes, String mimeType})? photo, bool removePhoto = false}) async {
+    if (photo != null) {
+      _applyUser(await _api.uploadPhoto(photo.bytes, photo.mimeType));
+    } else if (removePhoto) {
+      _applyUser(await _api.deletePhoto());
+    }
+    if (name != null) _applyUser(await _api.updateName(name));
+  }
+
+  void _applyUser(AppUser user) {
+    final current = _current;
+    if (current != null) state = AsyncData(current.withUser(user));
+  }
+
   void handleRealtime(String event, Map<String, dynamic> data) {
     final current = _current;
     if (current == null) return;
@@ -127,6 +145,13 @@ class SessionNotifier extends AsyncNotifier<Session?> {
         final status = DeviceStatus.fromJson(data);
         if (status.userId == current.partner?.id) {
           state = AsyncData(current.withPartnerStatus(status));
+        }
+      case 'profile-updated':
+        final user = AppUser.fromJson(data['user'] as Map<String, dynamic>);
+        if (user.id == current.partner?.id) {
+          state = AsyncData(current.withPartner(user));
+        } else if (user.id == current.user.id) {
+          state = AsyncData(current.withUser(user));
         }
       case 'couple-paired':
         state = AsyncData(current.paired(data));
@@ -287,3 +312,30 @@ String? inviteCodeFromUri(Uri uri) {
   final code = uri.queryParameters['code']?.trim().toUpperCase();
   return code == null || code.isEmpty ? null : code;
 }
+
+// ---------------------------------------------------------------------------
+// Partner address (reverse geocoding with Android's built-in Geocoder)
+// ---------------------------------------------------------------------------
+
+/// Coordinates are rounded to ~50 m so the address is looked up again only after a real move.
+typedef AddressKey = ({double lat, double lng});
+
+AddressKey addressKey(double lat, double lng) =>
+    (lat: (lat * 2000).roundToDouble() / 2000, lng: (lng * 2000).roundToDouble() / 2000);
+
+final addressProvider = FutureProvider.autoDispose.family<String?, AddressKey>(
+  (ref, key) async {
+    final marks = await Geocoding().placemarkFromCoordinates(key.lat, key.lng, locale: const Locale('id', 'ID'));
+    if (marks.isEmpty) return null;
+    final m = marks.first;
+    return formatAddress(
+      street: m.street ?? [m.thoroughfare, m.subThoroughfare].whereType<String>().join(' '),
+      subLocality: m.subLocality,
+      locality: m.locality,
+      subAdministrativeArea: m.subAdministrativeArea,
+      administrativeArea: m.administrativeArea,
+      postalCode: m.postalCode,
+    );
+  },
+  retry: (_, _) => null,
+);

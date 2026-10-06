@@ -26,6 +26,9 @@ class ApiException implements Exception {
         'not_paired' => 'Kamu belum terhubung dengan pasangan.',
         'invalid_google_token' => 'Login Google gagal diverifikasi server.',
         'network_error' => 'Tidak bisa terhubung ke server. Periksa koneksi internet.',
+        'not_found' => 'Fitur ini belum tersedia di server. Coba lagi nanti.',
+        'payload_too_large' => 'Ukuran foto terlalu besar.',
+        'unsupported_media_type' => 'Format foto tidak didukung. Gunakan JPG atau PNG.',
         'too_many_requests' => 'Terlalu banyak permintaan, coba lagi sebentar.',
         _ => message ?? 'Terjadi kesalahan ($statusCode).',
       };
@@ -43,8 +46,15 @@ class ApiClient {
 
   static const _timeout = Duration(seconds: 20);
 
-  Future<dynamic> _send(String method, String path, {Object? body, bool auth = true}) async {
-    final headers = {'Content-Type': 'application/json', 'Accept': 'application/json'};
+  Future<dynamic> _send(
+    String method,
+    String path, {
+    Object? body,
+    Uint8List? bytes,
+    String contentType = 'application/json',
+    bool auth = true,
+  }) async {
+    final headers = {'Content-Type': contentType, 'Accept': 'application/json'};
     if (auth) {
       final token = await _store.readToken();
       if (token == null) throw const ApiException(401, 'unauthorized');
@@ -54,6 +64,7 @@ class ApiClient {
     final request = http.Request(method, Uri.parse('${AppConfig.apiBaseUrl}$path'))
       ..headers.addAll(headers);
     if (body != null) request.body = jsonEncode(body);
+    if (bytes != null) request.bodyBytes = bytes;
 
     final http.Response response;
     try {
@@ -103,6 +114,18 @@ class ApiClient {
           as Map<String, dynamic>;
 
   Future<void> unpair() => _send('DELETE', '/couple');
+
+  Future<AppUser> updateName(String name) async =>
+      _user(await _send('PATCH', '/me', body: {'name': name.trim()}));
+
+  /// Uploads an already-compressed image as the profile photo.
+  Future<AppUser> uploadPhoto(Uint8List bytes, String mimeType) async =>
+      _user(await _send('PUT', '/me/photo', bytes: bytes, contentType: mimeType));
+
+  /// Reverts to the Google account photo.
+  Future<AppUser> deletePhoto() async => _user(await _send('DELETE', '/me/photo'));
+
+  static AppUser _user(dynamic json) => AppUser.fromJson((json as Map<String, dynamic>)['user'] as Map<String, dynamic>);
 
   Future<void> putStatus(DeviceStatus status) => _send('PUT', '/status', body: status.toUploadJson());
 

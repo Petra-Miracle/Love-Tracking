@@ -51,6 +51,8 @@ dependencies:
   network_carrier:
     path: packages/network_carrier
   material_symbols_icons: ^4.2960.0
+  image_picker: ^1.2.4
+  geocoding: ^5.0.0
 
 dev_dependencies:
   flutter_test:
@@ -82,10 +84,10 @@ flutter:
         - asset: assets/fonts/Poppins-Bold.ttf
           weight: 700
 
-  # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  assets:
+    # Cropped, tightly-bounded copy of assets/img/logo/Logo-Apps-removeBG.png
+    # (the source file is not bundled; logo.png is what the app renders).
+    - assets/img/logo/logo.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

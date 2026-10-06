@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import '../models/models.dart';
 import '../providers.dart';
 import 'format.dart';
+import 'profile_screen.dart';
 import 'theme.dart';
 
 /// Frames "2 – Hubungkan Pasangan Awal", "3 – Kode Dibuat", "4A – Kode Terisi Menghubungkan".
@@ -95,6 +96,14 @@ class _PairingScreenState extends ConsumerState<PairingScreen> {
           children: [
             Row(children: [
               Expanded(child: Text('Hubungkan Pasangan', style: displayText(22, color: scheme.onSurface))),
+              IconButton(
+                tooltip: 'Profil',
+                icon: Icon(Symbols.account_circle_rounded, size: 20, color: scheme.onSurfaceVariant),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(builder: (_) => const ProfileScreen()),
+                ),
+              ),
               IconButton(
                 tooltip: 'Keluar',
                 icon: Icon(Symbols.logout_rounded, size: 18, color: scheme.onSurfaceVariant),

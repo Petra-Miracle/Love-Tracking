@@ -20,6 +20,9 @@ class AppUser {
       );
 
   String get firstName => name.trim().isEmpty ? email : name.trim().split(' ').first;
+
+  /// True when the photo was uploaded in the app (served by our backend), not taken from Google.
+  bool get hasCustomPhoto => photoUrl?.contains('/users/$id/photo') ?? false;
 }
 
 class Couple {
@@ -164,6 +167,22 @@ class Session {
       );
 
   Session unpaired() => Session(user: user);
+
+  Session withUser(AppUser user) => Session(
+        user: user,
+        couple: couple,
+        partner: partner,
+        partnerStatus: partnerStatus,
+        myStatus: myStatus,
+      );
+
+  Session withPartner(AppUser partner) => Session(
+        user: user,
+        couple: couple,
+        partner: partner,
+        partnerStatus: partnerStatus,
+        myStatus: myStatus,
+      );
 
   Session withPartnerStatus(DeviceStatus status) => Session(
         user: user,

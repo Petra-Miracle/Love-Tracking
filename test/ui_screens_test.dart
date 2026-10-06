@@ -13,6 +13,7 @@ import 'package:love_tracking/providers.dart';
 import 'package:love_tracking/ui/home_screen.dart';
 import 'package:love_tracking/ui/login_screen.dart';
 import 'package:love_tracking/ui/pairing_screen.dart';
+import 'package:love_tracking/ui/profile_screen.dart';
 import 'package:love_tracking/ui/theme.dart';
 
 final _preview = Platform.environment['UI_PREVIEW'] == '1';
@@ -147,6 +148,8 @@ Future<void> _render(
       sharingPausedProvider.overrideWith(() => _FakePaused(paused)),
       pendingInviteProvider.overrideWith(() => _FakeInvite(pendingInvite)),
       myLiveStatusProvider.overrideWith((ref) => const Stream.empty()),
+      addressProvider.overrideWith((ref, key) async =>
+          'Jl. Jend. Sudirman Kav. 52-53, Senayan, Kebayoran Baru, Kota Jakarta Selatan, DKI Jakarta 12190'),
     ],
     child: MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -159,9 +162,32 @@ Future<void> _render(
   if (interact != null) await interact(tester);
 
   expect(tester.takeException(), isNull);
-  if (_preview) await expectLater(find.byType(MaterialApp), matchesGoldenFile('preview/$name.png'));
+  if (_preview) {
+    await _precacheImages(tester);
+    await expectLater(find.byType(MaterialApp), matchesGoldenFile('preview/$name.png'));
+  }
 
   await tester.pumpWidget(const SizedBox()); // dispose timers
+}
+
+/// `Image.asset` decodes through real file I/O, which `flutter_test`'s fake async
+/// zone never completes — so goldens would capture the image blank. Resolve every
+/// asset image inside `runAsync` first, then repaint.
+Future<void> _precacheImages(WidgetTester tester) async {
+  final assets = <String>{};
+  for (final widget in find.byType(Image).evaluate()) {
+    final provider = (widget.widget as Image).image;
+    if (provider is AssetImage) assets.add(provider.assetName);
+  }
+  if (assets.isEmpty) return;
+
+  final context = tester.element(find.byType(MaterialApp));
+  await tester.runAsync(() async {
+    for (final asset in assets) {
+      await precacheImage(AssetImage(asset), context);
+    }
+  });
+  await tester.pump();
 }
 
 void main() {
@@ -221,6 +247,8 @@ void main() {
     testWidgets('$name home', (t) => _render(t, name, const HomeScreen(),
         session: v.session, paused: v.paused, permissions: v.perms, brightness: v.b));
   }
+
+  testWidgets('11 Profile', (t) => _render(t, '11-profile', const ProfileScreen(), session: _paired(partner: _status())));
 
   testWidgets(
     '7 Menu',

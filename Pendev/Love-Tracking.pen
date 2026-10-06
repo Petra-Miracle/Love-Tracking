@@ -7820,6 +7820,283 @@
           }
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "bKabU",
+      "x": 2440,
+      "y": 0,
+      "name": "Profil",
+      "clip": true,
+      "width": 360,
+      "height": 800,
+      "fill": "$surface",
+      "layout": "vertical",
+      "gap": 20,
+      "padding": [
+        0,
+        24,
+        24,
+        24
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "U10Pa",
+          "name": "Status Bar",
+          "width": "fill_container",
+          "height": 40,
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "wAEe0",
+              "name": "Time",
+              "fill": "$onSurface",
+              "content": "09:41",
+              "fontFamily": "$font-body",
+              "fontSize": 14,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "mgFuh",
+              "name": "Status Icons",
+              "gap": 6,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "U3zZb",
+                  "name": "Signal",
+                  "width": 16,
+                  "height": 16,
+                  "icon": "signal_cellular_alt",
+                  "library": "Material Symbols Rounded",
+                  "fill": "$onSurface"
+                },
+                {
+                  "type": "icon",
+                  "id": "kzlb0",
+                  "name": "Wifi",
+                  "width": 16,
+                  "height": 16,
+                  "icon": "wifi",
+                  "library": "Material Symbols Rounded",
+                  "fill": "$onSurface"
+                },
+                {
+                  "type": "icon",
+                  "id": "GUhrT",
+                  "name": "Battery",
+                  "width": 16,
+                  "height": 16,
+                  "icon": "battery_full",
+                  "library": "Material Symbols Rounded",
+                  "fill": "$onSurface"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "wQaHe",
+          "name": "App Bar",
+          "width": "fill_container",
+          "gap": 8,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon",
+              "id": "Vwouo",
+              "name": "Back",
+              "width": 24,
+              "height": 24,
+              "icon": "arrow_back",
+              "library": "Material Symbols Rounded",
+              "fill": "$onSurface"
+            },
+            {
+              "type": "text",
+              "id": "ffW5j",
+              "name": "Title",
+              "fill": "$onSurface",
+              "content": "Profil",
+              "fontFamily": "$font-display",
+              "fontSize": 22,
+              "fontWeight": "600"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "W5Iim1",
+          "name": "Avatar Section",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 12,
+          "padding": [
+            16,
+            0,
+            0,
+            0
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "l2h2U",
+              "name": "Profile Picture",
+              "width": 120,
+              "height": 120,
+              "fill": "$primaryContainer",
+              "cornerRadius": 60,
+              "stroke": "$love",
+              "strokeWidth": 3,
+              "layout": "vertical",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "b83Ipj",
+                  "name": "Initial",
+                  "fill": "$onSurface",
+                  "content": "A",
+                  "fontFamily": "$font-display",
+                  "fontSize": 44,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "frame",
+                  "id": "YF7t5",
+                  "layoutPosition": "absolute",
+                  "x": 84,
+                  "y": 84,
+                  "name": "Camera Badge",
+                  "width": 36,
+                  "height": 36,
+                  "fill": "$love",
+                  "cornerRadius": 18,
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "nWJR1",
+                      "name": "Camera",
+                      "width": 18,
+                      "height": 18,
+                      "icon": "photo_camera",
+                      "library": "Material Symbols Rounded",
+                      "fill": "$onPrimary"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "mYIer",
+              "name": "Change Photo",
+              "fill": "$love",
+              "content": "Ubah foto profil",
+              "fontFamily": "$font-body",
+              "fontSize": 14,
+              "fontWeight": "600"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "HfPPg",
+          "name": "Form",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 8,
+          "children": [
+            {
+              "type": "text",
+              "id": "FB31t",
+              "name": "Field Label",
+              "fill": "$onSurfaceVariant",
+              "content": "Nama pengguna",
+              "fontFamily": "$font-body",
+              "fontSize": 14,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "v18WQt",
+              "name": "Username Field",
+              "width": "fill_container",
+              "cornerRadius": 16,
+              "stroke": "$outline",
+              "strokeWidth": 1,
+              "gap": 8,
+              "padding": [
+                14,
+                16
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "QUqhz",
+                  "name": "Person",
+                  "width": 18,
+                  "height": 18,
+                  "icon": "person",
+                  "library": "Material Symbols Rounded",
+                  "fill": "$onSurfaceVariant"
+                },
+                {
+                  "type": "text",
+                  "id": "hfsro",
+                  "name": "Value",
+                  "fill": "$onSurface",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Ana Putri",
+                  "fontFamily": "$font-body",
+                  "fontSize": 16,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "Jrtaa",
+              "name": "Helper",
+              "fill": "$onSurfaceVariant",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "Nama ini terlihat oleh pasanganmu.",
+              "fontFamily": "$font-body",
+              "fontSize": 12,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "id": "zQNV3",
+          "type": "ref",
+          "ref": "eu4wh",
+          "name": "Save Button",
+          "width": "fill_container",
+          "descendants": {
+            "TnRnw": {
+              "icon": "save"
+            },
+            "gplTv": {
+              "content": "Simpan"
+            }
+          }
+        }
+      ]
     }
   ],
   "themes": {

@@ -119,4 +119,38 @@ void main() {
       );
     });
   });
+
+  group('profile & address', () {
+    test('formatAddress builds an Indonesian address without repeats', () {
+      expect(
+        formatAddress(
+          street: 'Jl. Jend. Sudirman Kav. 52-53',
+          subLocality: 'Senayan',
+          locality: 'Kebayoran Baru',
+          subAdministrativeArea: 'Kota Jakarta Selatan',
+          administrativeArea: 'Daerah Khusus Ibukota Jakarta',
+          postalCode: '12190',
+        ),
+        'Jl. Jend. Sudirman Kav. 52-53, Senayan, Kebayoran Baru, Kota Jakarta Selatan, '
+        'Daerah Khusus Ibukota Jakarta 12190',
+      );
+      expect(
+        formatAddress(street: '8Q7X+2F', subLocality: 'Senayan', locality: 'Senayan', administrativeArea: ''),
+        'Senayan',
+      );
+      expect(formatAddress(), isNull);
+    });
+
+    test('addressKey rounds to ~50 m', () {
+      expect(addressKey(-6.20860, 106.84500), addressKey(-6.20840, 106.84520));
+      expect(addressKey(-6.2088, 106.8456) == addressKey(-6.2100, 106.8456), isFalse);
+    });
+
+    test('hasCustomPhoto only for photos served by our backend', () {
+      const google = AppUser(id: 'u1', email: 'a', name: 'A', photoUrl: 'https://lh3.googleusercontent.com/a/x');
+      const custom = AppUser(id: 'u1', email: 'a', name: 'A', photoUrl: 'https://api.example/users/u1/photo?v=1');
+      expect(google.hasCustomPhoto, isFalse);
+      expect(custom.hasCustomPhoto, isTrue);
+    });
+  });
 }

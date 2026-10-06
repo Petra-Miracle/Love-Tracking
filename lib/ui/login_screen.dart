@@ -39,9 +39,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 64),
-              const Icon(Symbols.favorite_rounded, size: 96, color: AppColors.love),
-              const SizedBox(height: 12),
+              const Spacer(),
+              Image.asset('assets/img/logo/logo.png', height: 132, fit: BoxFit.contain),
+              const SizedBox(height: 16),
               Text('Love Tracking', textAlign: TextAlign.center, style: displayText(32, color: scheme.onSurface)),
               const SizedBox(height: 12),
               Text(
