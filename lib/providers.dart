@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart' show Locale;
+import 'package:flutter/material.dart' show Locale, ThemeMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
@@ -339,3 +339,25 @@ final addressProvider = FutureProvider.autoDispose.family<String?, AddressKey>(
   },
   retry: (_, _) => null,
 );
+
+// ---------------------------------------------------------------------------
+// Light / dark mode
+// ---------------------------------------------------------------------------
+
+ThemeMode themeModeFromName(String? name) =>
+    ThemeMode.values.firstWhere((m) => m.name == name, orElse: () => ThemeMode.system);
+
+/// The saved theme, read in `main()` before the first frame.
+final initialThemeModeProvider = Provider<ThemeMode>((ref) => ThemeMode.system);
+
+final themeModeProvider = NotifierProvider<ThemeModeNotifier, ThemeMode>(ThemeModeNotifier.new);
+
+class ThemeModeNotifier extends Notifier<ThemeMode> {
+  @override
+  ThemeMode build() => ref.watch(initialThemeModeProvider);
+
+  Future<void> set(ThemeMode mode) async {
+    state = mode;
+    await ref.read(localStoreProvider).writeThemeMode(mode.name);
+  }
+}

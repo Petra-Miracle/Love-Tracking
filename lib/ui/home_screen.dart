@@ -9,9 +9,9 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../models/models.dart';
 import '../providers.dart';
 import 'format.dart';
-import 'movement.dart';
 import 'profile_screen.dart';
 import 'theme.dart';
+import 'theme_picker.dart';
 import 'user_pin.dart';
 import 'widgets.dart';
 
@@ -33,8 +33,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final _map = MapController();
   bool _mapReady = false;
   bool _centeredOnce = false;
-  final _partnerMotion = MovementEstimator();
-  final _myMotion = MovementEstimator();
 
   void _centerOn(LatLng point, {double zoom = 16}) {
     if (_mapReady) _map.move(point, zoom);
@@ -113,8 +111,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final partnerStale =
         partnerStatus == null || DateTime.now().difference(partnerStatus.updatedAt) > _staleAfter;
     _maybeCenterInitially(partnerPoint, myPoint);
-    final partnerMovement = _partnerMotion.update(partnerStatus);
-    final myMovement = _myMotion.update(paused ? null : myStatus);
+    // Both pins use the movement measured on that person's own phone, so the two
+    // partners always see the same thing.
+    final partnerMovement = partnerStale ? null : movementOf(partnerStatus);
+    final myMovement = paused ? null : movementOf(myStatus);
 
     return Scaffold(
       body: Stack(
@@ -179,7 +179,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       user: partner,
                       color: partnerStale ? AppColors.stale : AppColors.love,
                       avatarSize: 48,
-                      movement: partnerStale ? null : partnerMovement,
+                      movement: partnerMovement,
                       faded: partnerStale,
                     ),
                   ),
@@ -276,7 +276,7 @@ class _FloatingCard extends StatelessWidget {
   }
 }
 
-enum _MenuAction { profile, togglePause, unpair, signOut }
+enum _MenuAction { profile, theme, togglePause, unpair, signOut }
 
 class _TopBar extends StatelessWidget {
   const _TopBar({
@@ -328,12 +328,14 @@ class _TopBar extends StatelessWidget {
           menuPadding: const EdgeInsets.all(8),
           onSelected: (action) => switch (action) {
             _MenuAction.profile => onProfile(),
+            _MenuAction.theme => showThemePicker(context),
             _MenuAction.togglePause => onTogglePause(),
             _MenuAction.unpair => onUnpair(),
             _MenuAction.signOut => onSignOut(),
           },
           itemBuilder: (context) => [
             item(_MenuAction.profile, Symbols.account_circle_rounded, 'Profil'),
+            item(_MenuAction.theme, Symbols.contrast_rounded, 'Tampilan'),
             paused
                 ? item(_MenuAction.togglePause, Symbols.play_circle_rounded, 'Lanjutkan berbagi lokasi')
                 : item(_MenuAction.togglePause, Symbols.pause_circle_rounded, 'Jeda berbagi lokasi'),

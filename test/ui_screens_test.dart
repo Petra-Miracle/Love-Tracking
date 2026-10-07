@@ -154,10 +154,14 @@ Future<void> _render(
       addressProvider.overrideWith((ref, key) async =>
           'Jl. Jend. Sudirman Kav. 52-53, Senayan, Kebayoran Baru, Kota Jakarta Selatan, DKI Jakarta 12190'),
     ],
-    child: MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: buildTheme(brightness),
-      home: screen,
+    child: Consumer(
+      builder: (context, ref, _) => MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: buildTheme(Brightness.light),
+        darkTheme: buildTheme(Brightness.dark),
+        themeMode: brightness == Brightness.dark ? ThemeMode.dark : ref.watch(themeModeProvider),
+        home: screen,
+      ),
     ),
   ));
   await tester.pump(const Duration(milliseconds: 100));
@@ -201,6 +205,11 @@ void main() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
       const MethodChannel('plugins.flutter.io/path_provider'),
       (call) async => cacheDir,
+    );
+    // The theme choice is saved with flutter_secure_storage.
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+      const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+      (call) async => null,
     );
     await _loadFonts();
   });
@@ -252,33 +261,48 @@ void main() {
   }
 
   testWidgets(
-    '6J Moving (partner running ~2.5 m/s, me walking ~1.4 m/s)',
+    '6J Moving (partner running, me walking)',
     (t) => _render(
       t,
       '6J-moving',
       const HomeScreen(),
+      // `speed` is the movement measured on each person's own phone.
       session: _paired(
-        partner: _status(accuracy: 10, age: const Duration(seconds: 40)),
-        me: _status(userId: 'u1', lat: -6.2140, lng: 106.8520, accuracy: 10, age: const Duration(seconds: 40)),
+        partner: _status(speed: 2.5),
+        me: _status(userId: 'u1', lat: -6.2140, lng: 106.8520, speed: 1.4),
       ),
       interact: (t) async {
-        // Movement comes from displacement between updates: ~100 m and ~56 m in 40 s.
-        final container = ProviderScope.containerOf(t.element(find.byType(HomeScreen)));
-        (container.read(sessionProvider.notifier) as _FakeSession).emit(_paired(
-          partner: _status(lat: -6.2088 + 100 / 111320, accuracy: 10),
-          me: _status(userId: 'u1', lat: -6.2140 + 56 / 111320, lng: 106.8520, accuracy: 10),
-        ));
-        await t.pump(const Duration(milliseconds: 100));
-        await t.pump(const Duration(milliseconds: 900));
         expect(find.byTooltip('Sedang berlari'), findsOneWidget);
         expect(find.byTooltip('Sedang berjalan'), findsOneWidget);
       },
     ),
   );
 
-  testWidgets('6A shows no movement from a single update with a high reported speed', (t) async {
-    await _render(t, '6A-normal', const HomeScreen(), session: _paired(partner: _status(speed: 10)), interact: (t) async {
+  testWidgets('a status older than 2 minutes shows no movement', (t) async {
+    await _render(t, '6A-normal', const HomeScreen(),
+        session: _paired(partner: _status(speed: 10, age: const Duration(minutes: 3))), interact: (t) async {
       expect(find.byTooltip('Dalam perjalanan'), findsNothing);
+    });
+  });
+
+  for (final (name, screen, session) in [
+    ('1-login-dark', const LoginScreen() as Widget, null),
+    ('3-pairing-dark', const PairingScreen() as Widget, const Session(user: _ana)),
+    ('11-profile-dark', const ProfileScreen() as Widget, null),
+  ]) {
+    testWidgets('$name preview', (t) => _render(t, name, screen,
+        session: session ?? _paired(partner: _status()), brightness: Brightness.dark));
+  }
+
+  testWidgets('choosing Gelap on the profile screen switches the app to dark mode', (t) async {
+    await _render(t, '11-profile-theme', const ProfileScreen(), session: _paired(partner: _status()), interact: (t) async {
+      await t.ensureVisible(find.text('Gelap'));
+      await t.tap(find.text('Gelap'));
+      await t.pump(); // rebuild with the new theme mode
+      await t.pump(const Duration(milliseconds: 400)); // finish the theme animation
+      final container = ProviderScope.containerOf(t.element(find.byType(ProfileScreen)));
+      expect(container.read(themeModeProvider), ThemeMode.dark);
+      expect(Theme.of(t.element(find.byType(ProfileScreen))).brightness, Brightness.dark);
     });
   });
 

@@ -7,6 +7,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../models/models.dart';
 import '../providers.dart';
 import 'theme.dart';
+import 'theme_picker.dart';
 import 'widgets.dart';
 
 /// Frame "Profil": change display name and profile picture.
@@ -248,6 +249,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   icon: busyIcon(_saving, Symbols.save_rounded),
                   label: const Text('Simpan'),
                 ),
+                const SizedBox(height: 32),
+                Text(
+                  'Tampilan',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: scheme.onSurfaceVariant),
+                ),
+                const SizedBox(height: 8),
+                const ThemeModeSelector(),
               ]),
             ),
           ],

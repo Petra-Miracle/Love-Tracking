@@ -4,11 +4,14 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../data/api_client.dart';
 import '../data/local_store.dart';
 import '../models/models.dart';
+import '../ui/format.dart';
+import '../ui/movement.dart';
 import 'device_snapshot.dart';
 
 const _notificationTitle = 'Love Tracking aktif 💕';
@@ -78,12 +81,19 @@ class _BackgroundTracker {
   /// Keeps partner's view fresh (battery level, "last seen") while stationary.
   static const _heartbeat = Duration(seconds: 60);
 
+  static const _movementCheck = Duration(seconds: 15);
+
   final _subs = <StreamSubscription<dynamic>>[];
   StreamSubscription<Position>? _positionSub;
   Timer? _heartbeatTimer;
   Timer? _pendingSend;
   DateTime? _pendingAt;
   Position? _position;
+
+  /// Movement is measured here, from every GPS fix, and uploaded as `speed`.
+  final _motion = MovementEstimator();
+  Movement? _sentMovement;
+  Timer? _movementTimer;
   bool _paused = false;
   bool _sending = false;
   bool _dirty = false;
@@ -106,6 +116,11 @@ class _BackgroundTracker {
     _heartbeatTimer = Timer.periodic(_heartbeat, (_) {
       if (!_paused && _positionSub == null) _listenPosition();
       _requestSend();
+    });
+    // No new fix arrives once someone stops (10 m distance filter), so check regularly
+    // and tell the partner as soon as the movement changes, e.g. walking -> still.
+    _movementTimer = Timer.periodic(_movementCheck, (_) {
+      if (!_paused && movementForSpeed(_motion.speed()) != _sentMovement) _requestSend();
     });
 
     if (!_paused) {
@@ -141,6 +156,7 @@ class _BackgroundTracker {
     ).listen(
       (position) {
         _position = position;
+        _motion.add(LatLng(position.latitude, position.longitude), position.timestamp, position.accuracy);
         _requestSend();
       },
       onError: (Object e) {
@@ -158,6 +174,7 @@ class _BackgroundTracker {
     if (paused) {
       await _positionSub?.cancel();
       _positionSub = null;
+      _motion.clear();
     } else {
       _listenPosition();
     }
@@ -204,7 +221,9 @@ class _BackgroundTracker {
     _lastSent = DateTime.now();
     var rateLimited = false;
     try {
-      final status = await _snapshot.capture(position: _position, sharingPaused: _paused);
+      final speed = _paused ? 0.0 : _motion.speed();
+      _sentMovement = movementForSpeed(speed);
+      final status = await _snapshot.capture(position: _position, sharingPaused: _paused, speed: speed);
       service.invoke('update', status.toJson());
       await _api.putStatus(status);
     } on ApiException catch (e) {
@@ -233,6 +252,7 @@ class _BackgroundTracker {
     if (_stopped) return;
     _stopped = true;
     _heartbeatTimer?.cancel();
+    _movementTimer?.cancel();
     _pendingSend?.cancel();
     await _positionSub?.cancel();
     for (final sub in _subs) {

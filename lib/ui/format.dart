@@ -33,6 +33,16 @@ Movement? movementForSpeed(double metersPerSecond) {
   return Movement.traveling;
 }
 
+/// Movement shown on a pin. `speed` is measured on the moving person's own phone
+/// ([MovementEstimator]) and uploaded with their status, so both partners see the same
+/// result. Statuses older than 2 minutes say nothing about the present.
+Movement? movementOf(DeviceStatus? s) {
+  final speed = s?.speed;
+  if (s == null || !s.hasLocation || speed == null) return null;
+  if (DateTime.now().difference(s.updatedAt) > const Duration(minutes: 2)) return null;
+  return movementForSpeed(speed);
+}
+
 IconData movementIcon(Movement m) => switch (m) {
       Movement.walking => Symbols.directions_walk_rounded,
       Movement.running => Symbols.directions_run_rounded,

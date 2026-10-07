@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -9,16 +10,24 @@ import 'ui/login_screen.dart';
 import 'ui/pairing_screen.dart';
 import 'ui/theme.dart';
 
-class LoveTrackingApp extends StatelessWidget {
+class LoveTrackingApp extends ConsumerWidget {
   const LoveTrackingApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
       title: 'Love Tracking',
       debugShowCheckedModeBanner: false,
       theme: buildTheme(Brightness.light),
       darkTheme: buildTheme(Brightness.dark),
+      themeMode: ref.watch(themeModeProvider),
+      // Screens have no AppBar, so set the status bar icon color to match the theme here.
+      builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
+        value: Theme.of(context).brightness == Brightness.dark
+            ? SystemUiOverlayStyle.light.copyWith(statusBarColor: Colors.transparent)
+            : SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
+        child: child!,
+      ),
       home: AppConfig.missingKeys.isEmpty ? const _Root() : const _MissingConfigScreen(),
     );
   }
